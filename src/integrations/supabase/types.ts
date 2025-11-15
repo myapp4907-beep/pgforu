@@ -23,6 +23,7 @@ export type Database = {
           expense_type: string
           id: string
           owner_id: string
+          property_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           expense_type: string
           id?: string
           owner_id: string
+          property_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           expense_type?: string
           id?: string
           owner_id?: string
+          property_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -51,6 +54,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -67,6 +77,7 @@ export type Database = {
           owner_id: string
           payment_status: string
           phone: string
+          property_id: string | null
           room_id: string | null
           status: string
           updated_at: string | null
@@ -82,6 +93,7 @@ export type Database = {
           owner_id: string
           payment_status?: string
           phone: string
+          property_id?: string | null
           room_id?: string | null
           status?: string
           updated_at?: string | null
@@ -97,6 +109,7 @@ export type Database = {
           owner_id?: string
           payment_status?: string
           phone?: string
+          property_id?: string | null
           room_id?: string | null
           status?: string
           updated_at?: string | null
@@ -107,6 +120,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -142,6 +162,33 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           created_at: string | null
@@ -150,6 +197,7 @@ export type Database = {
           max_occupancy: number
           monthly_rent: number
           owner_id: string
+          property_id: string | null
           room_number: string
           room_type: string
           status: string
@@ -162,6 +210,7 @@ export type Database = {
           max_occupancy?: number
           monthly_rent: number
           owner_id: string
+          property_id?: string | null
           room_number: string
           room_type: string
           status?: string
@@ -174,6 +223,7 @@ export type Database = {
           max_occupancy?: number
           monthly_rent?: number
           owner_id?: string
+          property_id?: string | null
           room_number?: string
           room_type?: string
           status?: string
@@ -185,6 +235,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rooms_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]

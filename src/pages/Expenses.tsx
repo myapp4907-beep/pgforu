@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/contexts/PropertyContext";
 
 interface Expense {
   id: string;
@@ -34,6 +35,7 @@ interface Expense {
 const Expenses = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { selectedProperty } = useProperty();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -45,16 +47,19 @@ const Expenses = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedProperty) {
       fetchExpenses();
     }
-  }, [user]);
+  }, [user, selectedProperty]);
 
   const fetchExpenses = async () => {
+    if (!selectedProperty) return;
+    
     try {
       const { data, error } = await supabase
         .from("expenses")
         .select("*")
+        .eq("property_id", selectedProperty.id)
         .order("expense_date", { ascending: false });
 
       if (error) throw error;
@@ -71,7 +76,7 @@ const Expenses = () => {
   };
 
   const handleAddExpense = async () => {
-    if (!newExpense.amount || !newExpense.expense_type) {
+    if (!newExpense.amount || !newExpense.expense_type || !selectedProperty) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -83,6 +88,7 @@ const Expenses = () => {
     try {
       const { error } = await supabase.from("expenses").insert({
         owner_id: user?.id,
+        property_id: selectedProperty.id,
         expense_type: newExpense.expense_type,
         amount: parseFloat(newExpense.amount),
         description: newExpense.description || null,

@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/contexts/PropertyContext";
 
 interface Guest {
   id: string;
@@ -37,6 +38,7 @@ interface Guest {
 const Guests = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { selectedProperty } = useProperty();
   const [guests, setGuests] = useState<Guest[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,16 +53,18 @@ const Guests = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedProperty) {
       fetchData();
     }
-  }, [user]);
+  }, [user, selectedProperty]);
 
   const fetchData = async () => {
+    if (!selectedProperty) return;
+    
     try {
       const [guestsRes, roomsRes] = await Promise.all([
-        supabase.from("guests").select("*").eq("status", "active").order("full_name", { ascending: true }),
-        supabase.from("rooms").select("id, room_number"),
+        supabase.from("guests").select("*").eq("status", "active").eq("property_id", selectedProperty.id).order("full_name", { ascending: true }),
+        supabase.from("rooms").select("id, room_number").eq("property_id", selectedProperty.id),
       ]);
 
       if (guestsRes.error) throw guestsRes.error;
@@ -80,7 +84,7 @@ const Guests = () => {
   };
 
   const handleAddGuest = async () => {
-    if (!newGuest.name || !newGuest.phone || !newGuest.roomNumber || !newGuest.monthlyRent) {
+    if (!newGuest.name || !newGuest.phone || !newGuest.roomNumber || !newGuest.monthlyRent || !selectedProperty) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -92,6 +96,7 @@ const Guests = () => {
     try {
       const { error } = await supabase.from("guests").insert({
         owner_id: user?.id,
+        property_id: selectedProperty.id,
         full_name: newGuest.name,
         phone: newGuest.phone,
         room_id: newGuest.roomNumber,

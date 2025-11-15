@@ -5,10 +5,12 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useProperty } from "@/contexts/PropertyContext";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { selectedProperty } = useProperty();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRooms: 0,
@@ -21,17 +23,19 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedProperty) {
       fetchStats();
     }
-  }, [user]);
+  }, [user, selectedProperty]);
 
   const fetchStats = async () => {
+    if (!selectedProperty) return;
+    
     try {
       const [roomsRes, guestsRes, expensesRes] = await Promise.all([
-        supabase.from("rooms").select("status, monthly_rent"),
-        supabase.from("guests").select("monthly_rent, status").eq("status", "active"),
-        supabase.from("expenses").select("amount"),
+        supabase.from("rooms").select("status, monthly_rent").eq("property_id", selectedProperty.id),
+        supabase.from("guests").select("monthly_rent, status").eq("status", "active").eq("property_id", selectedProperty.id),
+        supabase.from("expenses").select("amount").eq("property_id", selectedProperty.id),
       ]);
 
       if (roomsRes.error) throw roomsRes.error;

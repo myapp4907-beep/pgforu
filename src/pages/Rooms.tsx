@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/contexts/PropertyContext";
 
 interface Room {
   id: string;
@@ -37,6 +38,7 @@ interface Room {
 const Rooms = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { selectedProperty } = useProperty();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -48,16 +50,19 @@ const Rooms = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedProperty) {
       fetchRooms();
     }
-  }, [user]);
+  }, [user, selectedProperty]);
 
   const fetchRooms = async () => {
+    if (!selectedProperty) return;
+    
     try {
       const { data, error } = await supabase
         .from("rooms")
         .select("*")
+        .eq("property_id", selectedProperty.id)
         .order("room_number", { ascending: true });
 
       if (error) throw error;
@@ -74,7 +79,7 @@ const Rooms = () => {
   };
 
   const handleAddRoom = async () => {
-    if (!newRoom.number || !newRoom.rent) {
+    if (!newRoom.number || !newRoom.rent || !selectedProperty) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -86,6 +91,7 @@ const Rooms = () => {
     try {
       const { error } = await supabase.from("rooms").insert({
         owner_id: user?.id,
+        property_id: selectedProperty.id,
         room_number: newRoom.number,
         room_type: newRoom.type,
         monthly_rent: parseFloat(newRoom.rent),
