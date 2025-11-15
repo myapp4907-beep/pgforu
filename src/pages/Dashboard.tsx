@@ -1,19 +1,78 @@
-import { Building2, Users, BedDouble, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Building2, Users, BedDouble, TrendingUp, TrendingDown, IndianRupee } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  // Mock data - will be replaced with real data later
-  const stats = {
-    totalRooms: 24,
-    occupiedRooms: 18,
-    vacantRooms: 6,
-    totalGuests: 18,
-    monthlyIncome: 54000,
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalRooms: 0,
+    occupiedRooms: 0,
+    vacantRooms: 0,
+    totalGuests: 0,
+    monthlyIncome: 0,
+    totalExpenses: 0,
+    netIncome: 0,
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      const [roomsRes, guestsRes, expensesRes] = await Promise.all([
+        supabase.from("rooms").select("status, monthly_rent"),
+        supabase.from("guests").select("monthly_rent, status").eq("status", "active"),
+        supabase.from("expenses").select("amount"),
+      ]);
+
+      if (roomsRes.error) throw roomsRes.error;
+      if (guestsRes.error) throw guestsRes.error;
+      if (expensesRes.error) throw expensesRes.error;
+
+      const rooms = roomsRes.data || [];
+      const guests = guestsRes.data || [];
+      const expenses = expensesRes.data || [];
+
+      const totalRooms = rooms.length;
+      const occupiedRooms = rooms.filter((r) => r.status === "occupied").length;
+      const vacantRooms = rooms.filter((r) => r.status === "vacant").length;
+      const totalGuests = guests.length;
+      const monthlyIncome = guests.reduce((sum, g) => sum + Number(g.monthly_rent), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const netIncome = monthlyIncome - totalExpenses;
+
+      setStats({
+        totalRooms,
+        occupiedRooms,
+        vacantRooms,
+        totalGuests,
+        monthlyIncome,
+        totalExpenses,
+        netIncome,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const occupancyRate = Math.round((stats.occupiedRooms / stats.totalRooms) * 100);
+  const occupancyRate = stats.totalRooms > 0 
+    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) 
+    : 0;
 
   const StatCard = ({ 
     title, 
@@ -50,6 +109,10 @@ const Dashboard = () => {
     </Card>
   );
 
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -72,7 +135,6 @@ const Dashboard = () => {
             value={stats.occupiedRooms}
             icon={Building2}
             subtitle={`${occupancyRate}% occupancy`}
-            trend="+2 this week"
           />
           <StatCard
             title="Vacant Rooms"
@@ -88,21 +150,53 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Monthly Income Card */}
-        <Card className="mb-8 bg-gradient-primary border-0 text-primary-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Monthly Income
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold mb-2">
-              ₹{stats.monthlyIncome.toLocaleString('en-IN')}
-            </div>
-            <p className="text-sm opacity-90">Expected for this month</p>
-          </CardContent>
-        </Card>
+        {/* Financial Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-primary border-0 text-primary-foreground">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Monthly Income
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold mb-2">
+                ₹{stats.monthlyIncome.toLocaleString('en-IN')}
+              </div>
+              <p className="text-sm opacity-90">From all active guests</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <TrendingDown className="h-5 w-5" />
+                Total Expenses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold mb-2">
+                ₹{stats.totalExpenses.toLocaleString('en-IN')}
+              </div>
+              <p className="text-sm text-muted-foreground">Monthly operating costs</p>
+            </CardContent>
+          </Card>
+
+          <Card className={stats.netIncome >= 0 ? "border-success" : "border-destructive"}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IndianRupee className="h-5 w-5" />
+                Net Income
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold mb-2 ${stats.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
+                ₹{stats.netIncome.toLocaleString('en-IN')}
+              </div>
+              <p className="text-sm text-muted-foreground">Income - Expenses</p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -115,7 +209,9 @@ const Dashboard = () => {
                 View and manage all your rooms, update availability, and track occupancy.
               </p>
               <Link to="/rooms">
-                <Button className="w-full">Manage Rooms</Button>
+                <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity w-full">
+                  Manage Rooms
+                </button>
               </Link>
             </CardContent>
           </Card>
@@ -129,7 +225,9 @@ const Dashboard = () => {
                 Add new guests, view resident details, and manage check-ins/check-outs.
               </p>
               <Link to="/guests">
-                <Button variant="secondary" className="w-full">Manage Guests</Button>
+                <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity w-full">
+                  Manage Guests
+                </button>
               </Link>
             </CardContent>
           </Card>
