@@ -281,7 +281,7 @@ const Guests = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-destructive">
-                {guests.filter(g => g.paymentStatus === "pending").length}
+                {guests.filter(g => g.payment_status === "pending").length}
               </div>
               <p className="text-sm text-muted-foreground">Pending Payments</p>
             </CardContent>
