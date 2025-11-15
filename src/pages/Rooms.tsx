@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, BedDouble, Users, IndianRupee } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,28 +21,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Room {
   id: string;
-  number: string;
-  type: string;
-  rent: number;
-  status: "occupied" | "vacant";
-  currentGuests?: number;
-  maxOccupancy: number;
+  room_number: string;
+  room_type: string;
+  monthly_rent: number;
+  status: string;
+  current_guests?: number;
+  max_occupancy: number;
 }
 
 const Rooms = () => {
   const { toast } = useToast();
-  const [rooms, setRooms] = useState<Room[]>([
-    { id: "1", number: "101", type: "Single", rent: 5000, status: "occupied", currentGuests: 1, maxOccupancy: 1 },
-    { id: "2", number: "102", type: "Double", rent: 7000, status: "occupied", currentGuests: 2, maxOccupancy: 2 },
-    { id: "3", number: "103", type: "Single", rent: 5000, status: "vacant", maxOccupancy: 1 },
-    { id: "4", number: "104", type: "Sharing", rent: 4000, status: "occupied", currentGuests: 3, maxOccupancy: 4 },
-    { id: "5", number: "201", type: "Double", rent: 7500, status: "vacant", maxOccupancy: 2 },
-    { id: "6", number: "202", type: "Single", rent: 5500, status: "occupied", currentGuests: 1, maxOccupancy: 1 },
-  ]);
-  
+  const { user } = useAuth();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newRoom, setNewRoom] = useState({
     number: "",
@@ -51,7 +47,33 @@ const Rooms = () => {
     maxOccupancy: "1",
   });
 
-  const handleAddRoom = () => {
+  useEffect(() => {
+    if (user) {
+      fetchRooms();
+    }
+  }, [user]);
+
+  const fetchRooms = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("rooms")
+        .select("*")
+        .order("room_number", { ascending: true });
+
+      if (error) throw error;
+      setRooms(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddRoom = async () => {
     if (!newRoom.number || !newRoom.rent) {
       toast({
         title: "Missing Information",
@@ -61,23 +83,34 @@ const Rooms = () => {
       return;
     }
 
-    const room: Room = {
-      id: (rooms.length + 1).toString(),
-      number: newRoom.number,
-      type: newRoom.type,
-      rent: parseInt(newRoom.rent),
-      status: "vacant",
-      maxOccupancy: parseInt(newRoom.maxOccupancy),
-    };
+    try {
+      const { error } = await supabase.from("rooms").insert({
+        owner_id: user?.id,
+        room_number: newRoom.number,
+        room_type: newRoom.type,
+        monthly_rent: parseFloat(newRoom.rent),
+        max_occupancy: parseInt(newRoom.maxOccupancy),
+        status: "vacant",
+        current_guests: 0,
+      });
 
-    setRooms([...rooms, room]);
-    setIsAddDialogOpen(false);
-    setNewRoom({ number: "", type: "Single", rent: "", maxOccupancy: "1" });
-    
-    toast({
-      title: "Room Added",
-      description: `Room ${room.number} has been added successfully`,
-    });
+      if (error) throw error;
+
+      toast({
+        title: "Room Added",
+        description: `Room ${newRoom.number} has been added successfully`,
+      });
+
+      setIsAddDialogOpen(false);
+      setNewRoom({ number: "", type: "Single", rent: "", maxOccupancy: "1" });
+      fetchRooms();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const RoomCard = ({ room }: { room: Room }) => (
@@ -86,7 +119,7 @@ const Rooms = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <BedDouble className="h-5 w-5 text-primary" />
-            Room {room.number}
+            Room {room.room_number}
           </CardTitle>
           <Badge variant={room.status === "occupied" ? "default" : "secondary"}>
             {room.status === "occupied" ? "Occupied" : "Vacant"}
@@ -97,13 +130,13 @@ const Rooms = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Type</span>
-            <span className="font-medium">{room.type}</span>
+            <span className="font-medium">{room.room_type}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Rent</span>
             <span className="font-medium flex items-center gap-1">
               <IndianRupee className="h-3 w-3" />
-              {room.rent.toLocaleString('en-IN')}/month
+              {Number(room.monthly_rent).toLocaleString('en-IN')}/month
             </span>
           </div>
           {room.status === "occupied" && (
@@ -111,7 +144,7 @@ const Rooms = () => {
               <span className="text-muted-foreground">Occupancy</span>
               <span className="font-medium flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                {room.currentGuests}/{room.maxOccupancy}
+                {room.current_guests}/{room.max_occupancy}
               </span>
             </div>
           )}
@@ -129,6 +162,10 @@ const Rooms = () => {
       </CardContent>
     </Card>
   );
+
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">

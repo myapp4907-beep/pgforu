@@ -14,7 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          expense_date: string
+          expense_type: string
+          id: string
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          expense_date?: string
+          expense_type: string
+          id?: string
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guests: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          id_proof_number: string | null
+          id_proof_type: string | null
+          joining_date: string
+          monthly_rent: number
+          owner_id: string
+          payment_status: string
+          phone: string
+          room_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          id_proof_number?: string | null
+          id_proof_type?: string | null
+          joining_date: string
+          monthly_rent: number
+          owner_id: string
+          payment_status?: string
+          phone: string
+          room_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          id_proof_number?: string | null
+          id_proof_type?: string | null
+          joining_date?: string
+          monthly_rent?: number
+          owner_id?: string
+          payment_status?: string
+          phone?: string
+          room_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          created_at: string | null
+          current_guests: number | null
+          id: string
+          max_occupancy: number
+          monthly_rent: number
+          owner_id: string
+          room_number: string
+          room_type: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_guests?: number | null
+          id?: string
+          max_occupancy?: number
+          monthly_rent: number
+          owner_id: string
+          room_number: string
+          room_type: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_guests?: number | null
+          id?: string
+          max_occupancy?: number
+          monthly_rent?: number
+          owner_id?: string
+          room_number?: string
+          room_type?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

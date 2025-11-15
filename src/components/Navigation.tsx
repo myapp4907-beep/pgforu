@@ -1,11 +1,16 @@
-import { Building2, LayoutDashboard, BedDouble, Users } from "lucide-react";
+import { Building2, LayoutDashboard, BedDouble, Users, IndianRupee, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { Button } from "./ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
+  const { signOut } = useAuth();
+  
   const navItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/rooms", icon: BedDouble, label: "Rooms" },
     { to: "/guests", icon: Users, label: "Guests" },
+    { to: "/expenses", icon: IndianRupee, label: "Expenses" },
   ];
 
   return (
@@ -34,6 +39,15 @@ const Navigation = () => {
                 <span className="hidden sm:inline">{item.label}</span>
               </NavLink>
             ))}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={signOut}
+              className="flex items-center gap-2 ml-4"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           </div>
         </div>
       </div>

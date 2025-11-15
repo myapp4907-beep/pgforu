@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, User, Phone, Calendar, IndianRupee } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,25 +21,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Guest {
   id: string;
-  name: string;
+  full_name: string;
   phone: string;
-  roomNumber: string;
-  joiningDate: string;
-  monthlyRent: number;
-  paymentStatus: "paid" | "pending";
+  room_id: string | null;
+  joining_date: string;
+  monthly_rent: number;
+  payment_status: string;
 }
 
 const Guests = () => {
   const { toast } = useToast();
-  const [guests, setGuests] = useState<Guest[]>([
-    { id: "1", name: "Rahul Sharma", phone: "+91 98765 43210", roomNumber: "101", joiningDate: "2024-01-15", monthlyRent: 5000, paymentStatus: "paid" },
-    { id: "2", name: "Priya Patel", phone: "+91 98765 43211", roomNumber: "102", joiningDate: "2024-02-01", monthlyRent: 7000, paymentStatus: "pending" },
-    { id: "3", name: "Amit Kumar", phone: "+91 98765 43212", roomNumber: "102", joiningDate: "2024-02-01", monthlyRent: 7000, paymentStatus: "paid" },
-    { id: "4", name: "Sneha Reddy", phone: "+91 98765 43213", roomNumber: "104", joiningDate: "2024-01-20", monthlyRent: 4000, paymentStatus: "pending" },
-  ]);
+  const { user } = useAuth();
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newGuest, setNewGuest] = useState({
@@ -50,7 +50,36 @@ const Guests = () => {
     monthlyRent: "",
   });
 
-  const handleAddGuest = () => {
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      const [guestsRes, roomsRes] = await Promise.all([
+        supabase.from("guests").select("*").eq("status", "active").order("full_name", { ascending: true }),
+        supabase.from("rooms").select("id, room_number"),
+      ]);
+
+      if (guestsRes.error) throw guestsRes.error;
+      if (roomsRes.error) throw roomsRes.error;
+
+      setGuests(guestsRes.data || []);
+      setRooms(roomsRes.data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddGuest = async () => {
     if (!newGuest.name || !newGuest.phone || !newGuest.roomNumber || !newGuest.monthlyRent) {
       toast({
         title: "Missing Information",
@@ -60,24 +89,41 @@ const Guests = () => {
       return;
     }
 
-    const guest: Guest = {
-      id: (guests.length + 1).toString(),
-      name: newGuest.name,
-      phone: newGuest.phone,
-      roomNumber: newGuest.roomNumber,
-      joiningDate: newGuest.joiningDate || new Date().toISOString().split('T')[0],
-      monthlyRent: parseInt(newGuest.monthlyRent),
-      paymentStatus: "pending",
-    };
+    try {
+      const { error } = await supabase.from("guests").insert({
+        owner_id: user?.id,
+        full_name: newGuest.name,
+        phone: newGuest.phone,
+        room_id: newGuest.roomNumber,
+        joining_date: newGuest.joiningDate || new Date().toISOString().split('T')[0],
+        monthly_rent: parseFloat(newGuest.monthlyRent),
+        payment_status: "pending",
+        status: "active",
+      });
 
-    setGuests([...guests, guest]);
-    setIsAddDialogOpen(false);
-    setNewGuest({ name: "", phone: "", roomNumber: "", joiningDate: "", monthlyRent: "" });
-    
-    toast({
-      title: "Guest Added",
-      description: `${guest.name} has been added successfully`,
-    });
+      if (error) throw error;
+      
+      toast({
+        title: "Guest Added",
+        description: `${newGuest.name} has been added successfully`,
+      });
+
+      setIsAddDialogOpen(false);
+      setNewGuest({ name: "", phone: "", roomNumber: "", joiningDate: "", monthlyRent: "" });
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getRoomNumber = (roomId: string | null) => {
+    if (!roomId) return "Not Assigned";
+    const room = rooms.find(r => r.id === roomId);
+    return room ? room.room_number : "Unknown";
   };
 
   const GuestCard = ({ guest }: { guest: Guest }) => (
@@ -86,10 +132,10 @@ const Guests = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
-            {guest.name}
+            {guest.full_name}
           </CardTitle>
-          <Badge variant={guest.paymentStatus === "paid" ? "default" : "destructive"}>
-            {guest.paymentStatus === "paid" ? "Paid" : "Pending"}
+          <Badge variant={guest.payment_status === "paid" ? "default" : "destructive"}>
+            {guest.payment_status === "paid" ? "Paid" : "Pending"}
           </Badge>
         </div>
       </CardHeader>
@@ -101,20 +147,20 @@ const Guests = () => {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Room</span>
-            <span className="font-medium">{guest.roomNumber}</span>
+            <span className="font-medium">{getRoomNumber(guest.room_id)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Joined</span>
             <span className="font-medium flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {new Date(guest.joiningDate).toLocaleDateString('en-IN')}
+              {new Date(guest.joining_date).toLocaleDateString('en-IN')}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Monthly Rent</span>
             <span className="font-medium flex items-center gap-1">
               <IndianRupee className="h-3 w-3" />
-              {guest.monthlyRent.toLocaleString('en-IN')}
+              {Number(guest.monthly_rent).toLocaleString('en-IN')}
             </span>
           </div>
         </div>
@@ -131,6 +177,10 @@ const Guests = () => {
       </CardContent>
     </Card>
   );
+
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -176,13 +226,22 @@ const Guests = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="guest-room">Room Number</Label>
-                  <Input
-                    id="guest-room"
-                    placeholder="e.g., 101"
+                  <Label htmlFor="guest-room">Room</Label>
+                  <Select
                     value={newGuest.roomNumber}
-                    onChange={(e) => setNewGuest({ ...newGuest, roomNumber: e.target.value })}
-                  />
+                    onValueChange={(value) => setNewGuest({ ...newGuest, roomNumber: value })}
+                  >
+                    <SelectTrigger id="guest-room">
+                      <SelectValue placeholder="Select a room" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rooms.map((room) => (
+                        <SelectItem key={room.id} value={room.id}>
+                          Room {room.room_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="joining-date">Joining Date</Label>
