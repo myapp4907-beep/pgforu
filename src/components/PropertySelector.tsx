@@ -14,8 +14,8 @@ export const PropertySelector = () => {
   if (properties.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <Building2 className="h-4 w-4 text-muted-foreground" />
+    <div className="flex items-center gap-2 w-full sm:w-auto">
+      <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       <Select
         value={selectedProperty?.id}
         onValueChange={(value) => {
@@ -23,7 +23,7 @@ export const PropertySelector = () => {
           if (property) setSelectedProperty(property);
         }}
       >
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-full sm:w-[180px] lg:w-[200px]">
           <SelectValue placeholder="Select property" />
         </SelectTrigger>
         <SelectContent>
