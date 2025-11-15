@@ -126,21 +126,22 @@ export const PropertyManager = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Manage Properties</h2>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold">Manage Properties</h2>
         <Button
           onClick={() => {
             setEditingProperty(null);
             setFormData({ name: '', address: '' });
             setIsOpen(true);
           }}
+          className="w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Property
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {properties.map((property) => (
           <Card
             key={property.id}

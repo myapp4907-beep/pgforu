@@ -127,16 +127,16 @@ const Expenses = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 max-w-7xl">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Expenses</h1>
-            <p className="text-muted-foreground">Track your monthly expenses</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">Expenses</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Track your monthly expenses</p>
           </div>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
                 Add Expense
               </Button>
@@ -205,7 +205,7 @@ const Expenses = () => {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
