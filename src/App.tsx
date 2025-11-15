@@ -8,9 +8,12 @@ import Dashboard from "./pages/Dashboard";
 import Rooms from "./pages/Rooms";
 import Guests from "./pages/Guests";
 import Expenses from "./pages/Expenses";
+import Properties from "./pages/Properties";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./hooks/useAuth";
+import { PropertyProvider } from "./contexts/PropertyContext";
+import { FirstPropertySetup } from "./components/FirstPropertySetup";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -23,7 +26,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" />;
   }
 
-  return <>{children}</>;
+  return (
+    <PropertyProvider>
+      <FirstPropertySetup />
+      {children}
+    </PropertyProvider>
+  );
 };
 
 const queryClient = new QueryClient();
@@ -46,6 +54,7 @@ const App = () => (
                   <Route path="/rooms" element={<Rooms />} />
                   <Route path="/guests" element={<Guests />} />
                   <Route path="/expenses" element={<Expenses />} />
+                  <Route path="/properties" element={<Properties />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ProtectedRoute>

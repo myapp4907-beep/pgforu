@@ -1,7 +1,8 @@
-import { Building2, LayoutDashboard, BedDouble, Users, IndianRupee, LogOut } from "lucide-react";
+import { Building2, LayoutDashboard, BedDouble, Users, IndianRupee, LogOut, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "./ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { PropertySelector } from "./PropertySelector";
 
 const Navigation = () => {
   const { signOut } = useAuth();
@@ -11,6 +12,7 @@ const Navigation = () => {
     { to: "/rooms", icon: BedDouble, label: "Rooms" },
     { to: "/guests", icon: Users, label: "Guests" },
     { to: "/expenses", icon: IndianRupee, label: "Expenses" },
+    { to: "/properties", icon: Settings, label: "Properties" },
   ];
 
   return (
@@ -27,6 +29,7 @@ const Navigation = () => {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-2">
+            <PropertySelector />
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
