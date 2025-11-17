@@ -67,7 +67,7 @@ const Guests = () => {
 
   const filteredGuests = useMemo(() => {
     return guests.filter((guest) => {
-      const roomNumber = getRoomNumber(guest.room_id);
+      const roomNumber = rooms.find(r => r.id === guest.room_id)?.room_number || "";
       const matchesSearch = 
         guest.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         guest.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -80,7 +80,7 @@ const Guests = () => {
 
       return matchesSearch && matchesPaymentStatus;
     });
-  }, [guests, searchQuery, filters]);
+  }, [guests, rooms, searchQuery, filters]);
 
   const toggleFilter = (category: "paymentStatuses", value: string) => {
     setFilters((prev) => ({
