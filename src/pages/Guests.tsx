@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/contexts/PropertyContext";
 import { GuestDetailsDialog } from "@/components/GuestDetailsDialog";
+import { ExportDialog } from "@/components/ExportDialog";
 import {
   Popover,
   PopoverContent,
@@ -103,7 +104,7 @@ const Guests = () => {
     try {
       const [guestsRes, roomsRes] = await Promise.all([
         supabase.from("guests").select("*").eq("status", "active").eq("property_id", selectedProperty.id).order("full_name", { ascending: true }),
-        supabase.from("rooms").select("id, room_number").eq("property_id", selectedProperty.id),
+        supabase.from("rooms").select("id, room_number, current_guests, max_occupancy").eq("property_id", selectedProperty.id),
       ]);
 
       if (guestsRes.error) throw guestsRes.error;
@@ -133,7 +134,24 @@ const Guests = () => {
     }
 
     try {
-      const { error } = await supabase.from("guests").insert({
+      // Check room capacity
+      const selectedRoom = rooms.find(r => r.id === newGuest.roomNumber);
+      if (!selectedRoom) {
+        throw new Error("Room not found");
+      }
+
+      const currentOccupancy = selectedRoom.current_guests || 0;
+      if (currentOccupancy >= selectedRoom.max_occupancy) {
+        toast({
+          title: "Room Full",
+          description: `Room ${selectedRoom.room_number} is at maximum capacity (${selectedRoom.max_occupancy} guests)`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Add guest
+      const { error: guestError } = await supabase.from("guests").insert({
         owner_id: user?.id,
         property_id: selectedProperty.id,
         full_name: newGuest.name,
@@ -145,7 +163,21 @@ const Guests = () => {
         status: "active",
       });
 
-      if (error) throw error;
+      if (guestError) throw guestError;
+
+      // Update room occupancy
+      const newCurrentGuests = currentOccupancy + 1;
+      const newStatus = newCurrentGuests >= selectedRoom.max_occupancy ? "occupied" : selectedRoom.status;
+
+      const { error: roomError } = await supabase
+        .from("rooms")
+        .update({ 
+          current_guests: newCurrentGuests,
+          status: newStatus
+        })
+        .eq("id", newGuest.roomNumber);
+
+      if (roomError) throw roomError;
       
       toast({
         title: "Guest Added",
@@ -237,14 +269,37 @@ const Guests = () => {
               <p className="text-sm sm:text-base text-muted-foreground">Manage all your PG guests</p>
             </div>
             
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 w-full sm:w-auto">
-                <Plus className="h-4 w-4" />
-                Add Guest
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+            <div className="flex gap-2">
+              <ExportDialog
+                data={guests.map(g => ({
+                  full_name: g.full_name,
+                  phone: g.phone,
+                  room_number: getRoomNumber(g.room_id),
+                  joining_date: new Date(g.joining_date).toLocaleDateString('en-IN'),
+                  monthly_rent: g.monthly_rent,
+                  payment_status: g.payment_status,
+                }))}
+                filename="guests_report"
+                title="Guest Report"
+                dateField="joining_date"
+                csvHeaders={['full_name', 'phone', 'room_number', 'joining_date', 'monthly_rent', 'payment_status']}
+                pdfColumns={[
+                  { header: 'Name', dataKey: 'full_name' },
+                  { header: 'Phone', dataKey: 'phone' },
+                  { header: 'Room', dataKey: 'room_number' },
+                  { header: 'Joined', dataKey: 'joining_date' },
+                  { header: 'Rent', dataKey: 'monthly_rent' },
+                  { header: 'Status', dataKey: 'payment_status' },
+                ]}
+              />
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2 w-full sm:w-auto">
+                    <Plus className="h-4 w-4" />
+                    Add Guest
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Guest</DialogTitle>
                 <DialogDescription>
@@ -313,6 +368,8 @@ const Guests = () => {
               </Button>
             </DialogContent>
           </Dialog>
+            </div>
+          </div>
           
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -372,7 +429,6 @@ const Guests = () => {
               </PopoverContent>
             </Popover>
           </div>
-        </div>
         </div>
 
         {/* Stats Summary */}

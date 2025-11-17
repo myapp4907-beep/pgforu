@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/contexts/PropertyContext";
 import { RoomDetailsDialog } from "@/components/RoomDetailsDialog";
+import { ExportDialog } from "@/components/ExportDialog";
 import {
   Popover,
   PopoverContent,
@@ -222,14 +223,37 @@ const Rooms = () => {
               <p className="text-sm sm:text-base text-muted-foreground">Manage all your PG rooms</p>
             </div>
             
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 w-full sm:w-auto">
-                <Plus className="h-4 w-4" />
-                Add Room
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+            <div className="flex gap-2">
+              <ExportDialog
+                data={rooms.map(r => ({
+                  room_number: r.room_number,
+                  room_type: r.room_type,
+                  monthly_rent: r.monthly_rent,
+                  status: r.status,
+                  current_guests: r.current_guests || 0,
+                  max_occupancy: r.max_occupancy,
+                }))}
+                filename="rooms_report"
+                title="Rooms Report"
+                dateField="created_at"
+                csvHeaders={['room_number', 'room_type', 'monthly_rent', 'status', 'current_guests', 'max_occupancy']}
+                pdfColumns={[
+                  { header: 'Room', dataKey: 'room_number' },
+                  { header: 'Type', dataKey: 'room_type' },
+                  { header: 'Rent', dataKey: 'monthly_rent' },
+                  { header: 'Status', dataKey: 'status' },
+                  { header: 'Occupancy', dataKey: 'current_guests' },
+                  { header: 'Max', dataKey: 'max_occupancy' },
+                ]}
+              />
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2 w-full sm:w-auto">
+                    <Plus className="h-4 w-4" />
+                    Add Room
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Room</DialogTitle>
                 <DialogDescription>
@@ -295,6 +319,8 @@ const Rooms = () => {
               </Button>
             </DialogContent>
           </Dialog>
+            </div>
+          </div>
           
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -374,7 +400,6 @@ const Rooms = () => {
               </PopoverContent>
             </Popover>
           </div>
-        </div>
         </div>
 
         {/* Stats Summary */}
