@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/contexts/PropertyContext";
+import { ExportDialog } from "@/components/ExportDialog";
 
 interface Expense {
   id: string;
@@ -134,13 +135,32 @@ const Expenses = () => {
             <p className="text-sm sm:text-base text-muted-foreground">Track your monthly expenses</p>
           </div>
           
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 w-full sm:w-auto">
-                <Plus className="h-4 w-4" />
-                Add Expense
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <ExportDialog
+              data={expenses.map(e => ({
+                expense_type: e.expense_type,
+                amount: e.amount,
+                description: e.description || '',
+                expense_date: new Date(e.expense_date).toLocaleDateString('en-IN'),
+              }))}
+              filename="expenses_report"
+              title="Expenses Report"
+              dateField="expense_date"
+              csvHeaders={['expense_type', 'amount', 'description', 'expense_date']}
+              pdfColumns={[
+                { header: 'Type', dataKey: 'expense_type' },
+                { header: 'Amount', dataKey: 'amount' },
+                { header: 'Description', dataKey: 'description' },
+                { header: 'Date', dataKey: 'expense_date' },
+              ]}
+            />
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2 w-full sm:w-auto">
+                  <Plus className="h-4 w-4" />
+                  Add Expense
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Expense</DialogTitle>
@@ -203,6 +223,7 @@ const Expenses = () => {
               </Button>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
