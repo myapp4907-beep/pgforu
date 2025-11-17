@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, User, Phone, Calendar, IndianRupee } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, User, Phone, Calendar, IndianRupee, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/contexts/PropertyContext";
+import { GuestDetailsDialog } from "@/components/GuestDetailsDialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Guest {
   id: string;
@@ -51,6 +58,38 @@ const Guests = () => {
     joiningDate: "",
     monthlyRent: "",
   });
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    paymentStatuses: [] as string[],
+  });
+
+  const filteredGuests = useMemo(() => {
+    return guests.filter((guest) => {
+      const roomNumber = getRoomNumber(guest.room_id);
+      const matchesSearch = 
+        guest.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        guest.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        roomNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        guest.monthly_rent.toString().includes(searchQuery) ||
+        new Date(guest.joining_date).toLocaleDateString('en-IN').includes(searchQuery);
+
+      const matchesPaymentStatus = filters.paymentStatuses.length === 0 || 
+        filters.paymentStatuses.includes(guest.payment_status);
+
+      return matchesSearch && matchesPaymentStatus;
+    });
+  }, [guests, searchQuery, filters]);
+
+  const toggleFilter = (category: "paymentStatuses", value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [category]: prev[category].includes(value)
+        ? prev[category].filter((item) => item !== value)
+        : [...prev[category], value],
+    }));
+  };
 
   useEffect(() => {
     if (user && selectedProperty) {
@@ -172,10 +211,10 @@ const Guests = () => {
         <Button 
           variant="outline" 
           className="w-full mt-4"
-          onClick={() => toast({
-            title: "Coming Soon",
-            description: "Guest details view will be available soon",
-          })}
+          onClick={() => {
+            setSelectedGuest(guest);
+            setIsDetailsOpen(true);
+          }}
         >
           View Details
         </Button>
@@ -191,13 +230,14 @@ const Guests = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">Guest Management</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Manage all your PG guests</p>
-          </div>
-          
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <div className="mb-6 sm:mb-8 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">Guest Management</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Manage all your PG guests</p>
+            </div>
+            
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
@@ -273,6 +313,65 @@ const Guests = () => {
               </Button>
             </DialogContent>
           </Dialog>
+          
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, phone, room, rent, or joining date..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                  {filters.paymentStatuses.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {filters.paymentStatuses.length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-3">Payment Status</h4>
+                    <div className="space-y-2">
+                      {["paid", "pending"].map((status) => (
+                        <div key={status} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`payment-${status}`}
+                            checked={filters.paymentStatuses.includes(status)}
+                            onCheckedChange={() => toggleFilter("paymentStatuses", status)}
+                          />
+                          <label
+                            htmlFor={`payment-${status}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize"
+                          >
+                            {status}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {filters.paymentStatuses.length > 0 && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setFilters({ paymentStatuses: [] })}
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {/* Stats Summary */}
@@ -295,11 +394,27 @@ const Guests = () => {
 
         {/* Guests Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {guests.map((guest) => (
+          {filteredGuests.map((guest) => (
             <GuestCard key={guest.id} guest={guest} />
           ))}
         </div>
+
+        {filteredGuests.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No guests found matching your criteria</p>
+          </div>
+        )}
       </div>
+
+      {selectedGuest && (
+        <GuestDetailsDialog
+          guest={selectedGuest}
+          rooms={rooms}
+          open={isDetailsOpen}
+          onOpenChange={setIsDetailsOpen}
+          onUpdate={fetchData}
+        />
+      )}
     </div>
   );
 };
