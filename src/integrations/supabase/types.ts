@@ -312,6 +312,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_property_owner: {
+        Args: { _property_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "owner" | "manager"
