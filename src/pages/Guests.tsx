@@ -41,6 +41,8 @@ interface Guest {
   joining_date: string;
   monthly_rent: number;
   payment_status: string;
+  status: string;
+  bed_number: string | null;
 }
 
 const Guests = () => {
@@ -56,9 +58,11 @@ const Guests = () => {
     name: "",
     phone: "",
     roomNumber: "",
+    bedNumber: "",
     joiningDate: "",
     monthlyRent: "",
   });
+  const [showHistory, setShowHistory] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,14 +100,14 @@ const Guests = () => {
     if (user && selectedProperty) {
       fetchData();
     }
-  }, [user, selectedProperty]);
+  }, [user, selectedProperty, showHistory]);
 
   const fetchData = async () => {
     if (!selectedProperty) return;
     
     try {
       const [guestsRes, roomsRes] = await Promise.all([
-        supabase.from("guests").select("*").eq("status", "active").eq("property_id", selectedProperty.id).order("full_name", { ascending: true }),
+        supabase.from("guests").select("*").eq("status", showHistory ? "moved_out" : "active").eq("property_id", selectedProperty.id).order("full_name", { ascending: true }),
         supabase.from("rooms").select("id, room_number, current_guests, max_occupancy").eq("property_id", selectedProperty.id),
       ]);
 
@@ -124,7 +128,7 @@ const Guests = () => {
   };
 
   const handleAddGuest = async () => {
-    if (!newGuest.name || !newGuest.phone || !newGuest.roomNumber || !newGuest.monthlyRent || !selectedProperty) {
+    if (!newGuest.name || !newGuest.phone || !newGuest.roomNumber || !newGuest.bedNumber || !newGuest.monthlyRent || !selectedProperty) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -157,6 +161,7 @@ const Guests = () => {
         full_name: newGuest.name,
         phone: newGuest.phone,
         room_id: newGuest.roomNumber,
+        bed_number: newGuest.bedNumber,
         joining_date: newGuest.joiningDate || new Date().toISOString().split('T')[0],
         monthly_rent: parseFloat(newGuest.monthlyRent),
         payment_status: "pending",
@@ -181,11 +186,11 @@ const Guests = () => {
       
       toast({
         title: "Guest Added",
-        description: `${newGuest.name} has been added successfully`,
+        description: `${newGuest.name} has been added successfully to Bed ${newGuest.bedNumber}`,
       });
 
       setIsAddDialogOpen(false);
-      setNewGuest({ name: "", phone: "", roomNumber: "", joiningDate: "", monthlyRent: "" });
+      setNewGuest({ name: "", phone: "", roomNumber: "", bedNumber: "", joiningDate: "", monthlyRent: "" });
       fetchData();
     } catch (error: any) {
       toast({
@@ -225,6 +230,12 @@ const Guests = () => {
             <span className="text-muted-foreground">Room</span>
             <span className="font-medium">{getRoomNumber(guest.room_id)}</span>
           </div>
+          {guest.bed_number && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Bed</span>
+              <span className="font-medium">{guest.bed_number}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Joined</span>
             <span className="font-medium flex items-center gap-1">
@@ -269,7 +280,14 @@ const Guests = () => {
               <p className="text-sm sm:text-base text-muted-foreground">Manage all your PG guests</p>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant={showHistory ? "default" : "outline"}
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-2"
+              >
+                {showHistory ? "Show Active" : "Show History"}
+              </Button>
               <ExportDialog
                 data={guests.map(g => ({
                   full_name: g.full_name,
@@ -342,6 +360,15 @@ const Guests = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bed-number">Bed Number</Label>
+                  <Input
+                    id="bed-number"
+                    placeholder="e.g., B1 or Bed 1"
+                    value={newGuest.bedNumber}
+                    onChange={(e) => setNewGuest({ ...newGuest, bedNumber: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="joining-date">Joining Date</Label>

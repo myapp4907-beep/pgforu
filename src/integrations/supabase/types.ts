@@ -67,6 +67,7 @@ export type Database = {
       }
       guests: {
         Row: {
+          bed_number: string | null
           created_at: string | null
           full_name: string
           id: string
@@ -83,6 +84,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bed_number?: string | null
           created_at?: string | null
           full_name: string
           id?: string
@@ -99,6 +101,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bed_number?: string | null
           created_at?: string | null
           full_name?: string
           id?: string
@@ -189,6 +192,35 @@ export type Database = {
         }
         Relationships: []
       }
+      property_managers: {
+        Row: {
+          created_at: string | null
+          id: string
+          manager_id: string
+          property_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          manager_id: string
+          property_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_managers_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           created_at: string | null
@@ -246,15 +278,43 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_id_by_email: { Args: { user_email: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -381,6 +441,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "manager"],
+    },
   },
 } as const
