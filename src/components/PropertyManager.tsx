@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Edit, Trash2 } from 'lucide-react';
+import { ManagerDialog } from './ManagerDialog';
 import {
   Card,
   CardContent,
@@ -154,7 +155,8 @@ export const PropertyManager = () => {
               )}
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <ManagerDialog propertyId={property.id} propertyName={property.name} />
                 <Button
                   variant="outline"
                   size="sm"

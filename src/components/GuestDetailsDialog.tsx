@@ -26,9 +26,11 @@ interface Guest {
   full_name: string;
   phone: string;
   room_id: string | null;
+  bed_number: string | null;
   joining_date: string;
   monthly_rent: number;
   payment_status: string;
+  status: string;
 }
 
 interface GuestDetailsDialogProps {
@@ -46,9 +48,11 @@ export const GuestDetailsDialog = ({ guest, rooms, open, onOpenChange, onUpdate 
     full_name: guest.full_name,
     phone: guest.phone,
     room_id: guest.room_id || "",
+    bed_number: guest.bed_number || "",
     joining_date: guest.joining_date,
     monthly_rent: guest.monthly_rent.toString(),
     payment_status: guest.payment_status,
+    status: guest.status,
   });
 
   const getRoomNumber = (roomId: string | null) => {
@@ -65,9 +69,11 @@ export const GuestDetailsDialog = ({ guest, rooms, open, onOpenChange, onUpdate 
           full_name: editData.full_name,
           phone: editData.phone,
           room_id: editData.room_id || null,
+          bed_number: editData.bed_number || null,
           joining_date: editData.joining_date,
           monthly_rent: parseFloat(editData.monthly_rent),
           payment_status: editData.payment_status,
+          status: editData.status,
         })
         .eq("id", guest.id);
 
@@ -153,6 +159,14 @@ export const GuestDetailsDialog = ({ guest, rooms, open, onOpenChange, onUpdate 
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="edit-bed-number">Bed Number</Label>
+                <Input
+                  id="edit-bed-number"
+                  value={editData.bed_number}
+                  onChange={(e) => setEditData({ ...editData, bed_number: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="edit-joining-date">Joining Date</Label>
                 <Input
                   id="edit-joining-date"
@@ -182,6 +196,22 @@ export const GuestDetailsDialog = ({ guest, rooms, open, onOpenChange, onUpdate 
                   <SelectContent>
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={editData.status}
+                  onValueChange={(value) => setEditData({ ...editData, status: value })}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="moved_out">Moved Out</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -218,6 +248,12 @@ export const GuestDetailsDialog = ({ guest, rooms, open, onOpenChange, onUpdate 
                   <span className="text-sm text-muted-foreground">Room</span>
                   <span className="font-medium">{getRoomNumber(guest.room_id)}</span>
                 </div>
+                {guest.bed_number && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-sm text-muted-foreground">Bed Number</span>
+                    <span className="font-medium">{guest.bed_number}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <span className="text-sm text-muted-foreground">Joining Date</span>
                   <span className="font-medium flex items-center gap-2">
