@@ -141,6 +141,73 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          guest_id: string
+          id: string
+          notes: string | null
+          owner_id: string
+          payment_date: string
+          payment_method: string | null
+          payment_month: string
+          property_id: string | null
+          room_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          guest_id: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          payment_date?: string
+          payment_method?: string | null
+          payment_month: string
+          property_id?: string | null
+          room_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          guest_id?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          payment_date?: string
+          payment_method?: string | null
+          payment_month?: string
+          property_id?: string | null
+          room_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null

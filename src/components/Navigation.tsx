@@ -1,8 +1,9 @@
-import { Building2, LayoutDashboard, BedDouble, Users, IndianRupee, LogOut, Settings, Menu } from "lucide-react";
+import { Building2, LayoutDashboard, BedDouble, Users, IndianRupee, LogOut, Settings, Menu, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "./ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { PropertySelector } from "./PropertySelector";
+import { NotificationsPanel } from "./NotificationsPanel";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
 
@@ -14,6 +15,7 @@ const Navigation = () => {
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/rooms", icon: BedDouble, label: "Rooms" },
     { to: "/guests", icon: Users, label: "Guests" },
+    { to: "/payments", icon: CreditCard, label: "Payments" },
     { to: "/expenses", icon: IndianRupee, label: "Expenses" },
     { to: "/properties", icon: Settings, label: "Properties" },
   ];
@@ -33,6 +35,7 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-2">
             <PropertySelector />
+            <NotificationsPanel />
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
@@ -65,7 +68,10 @@ const Navigation = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px] sm:w-[350px]">
               <div className="flex flex-col gap-4 mt-8">
-                <PropertySelector />
+                <div className="flex items-center gap-2">
+                  <PropertySelector />
+                  <NotificationsPanel />
+                </div>
                 <div className="flex flex-col gap-2">
                   {navItems.map((item) => (
                     <NavLink
