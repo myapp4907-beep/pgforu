@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Building2, Users, BedDouble, TrendingUp, TrendingDown, IndianRupee } from "lucide-react";
+import { Building2, Users, BedDouble, TrendingUp, TrendingDown, IndianRupee, Home } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useProperty } from "@/contexts/PropertyContext";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { format, subMonths, startOfMonth } from "date-fns";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -20,7 +22,11 @@ const Dashboard = () => {
     monthlyIncome: 0,
     totalExpenses: 0,
     netIncome: 0,
+    totalProperties: 0,
   });
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [expenseData, setExpenseData] = useState<any[]>([]);
+  const [occupancyData, setOccupancyData] = useState<any[]>([]);
 
   useEffect(() => {
     if (user && selectedProperty) {
@@ -32,19 +38,25 @@ const Dashboard = () => {
     if (!selectedProperty) return;
     
     try {
-      const [roomsRes, guestsRes, expensesRes] = await Promise.all([
+      const [roomsRes, guestsRes, expensesRes, propertiesRes, paymentsRes] = await Promise.all([
         supabase.from("rooms").select("status, monthly_rent").eq("property_id", selectedProperty.id),
         supabase.from("guests").select("monthly_rent, status").eq("status", "active").eq("property_id", selectedProperty.id),
-        supabase.from("expenses").select("amount").eq("property_id", selectedProperty.id),
+        supabase.from("expenses").select("amount, expense_date").eq("property_id", selectedProperty.id),
+        supabase.from("properties").select("id").eq("owner_id", user!.id),
+        supabase.from("payments").select("amount, payment_month").eq("property_id", selectedProperty.id),
       ]);
 
       if (roomsRes.error) throw roomsRes.error;
       if (guestsRes.error) throw guestsRes.error;
       if (expensesRes.error) throw expensesRes.error;
+      if (propertiesRes.error) throw propertiesRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
 
       const rooms = roomsRes.data || [];
       const guests = guestsRes.data || [];
       const expenses = expensesRes.data || [];
+      const properties = propertiesRes.data || [];
+      const payments = paymentsRes.data || [];
 
       const totalRooms = rooms.length;
       const occupiedRooms = rooms.filter((r) => r.status === "occupied").length;
@@ -62,7 +74,56 @@ const Dashboard = () => {
         monthlyIncome,
         totalExpenses,
         netIncome,
+        totalProperties: properties.length,
       });
+
+      // Prepare chart data for last 6 months
+      const monthsData = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = subMonths(new Date(), i);
+        const monthStart = startOfMonth(date);
+        const monthKey = format(monthStart, "yyyy-MM");
+        
+        const monthPayments = payments.filter(p => 
+          format(new Date(p.payment_month), "yyyy-MM") === monthKey
+        );
+        const monthExpenses = expenses.filter(e => 
+          format(new Date(e.expense_date), "yyyy-MM") === monthKey
+        );
+
+        const revenue = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const expense = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+
+        monthsData.push({
+          month: format(date, "MMM"),
+          revenue,
+          expenses: expense,
+          net: revenue - expense,
+        });
+      }
+
+      setRevenueData(monthsData);
+      
+      // Expense breakdown by type
+      const expenseTypes = expenses.reduce((acc: any, expense: any) => {
+        const type = expense.expense_type || "Other";
+        acc[type] = (acc[type] || 0) + Number(expense.amount);
+        return acc;
+      }, {});
+
+      setExpenseData(
+        Object.entries(expenseTypes).map(([name, value]) => ({
+          name,
+          value,
+        }))
+      );
+
+      // Occupancy data
+      setOccupancyData([
+        { name: "Occupied", value: occupiedRooms },
+        { name: "Vacant", value: vacantRooms },
+      ]);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -127,7 +188,13 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+          <StatCard
+            title="Total Properties"
+            value={stats.totalProperties}
+            icon={Home}
+            subtitle="Under management"
+          />
           <StatCard
             title="Total Rooms"
             value={stats.totalRooms}
@@ -201,6 +268,96 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue vs Expenses (Last 6 Months)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--success))" strokeWidth={2} name="Revenue" />
+                  <Line type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" strokeWidth={2} name="Expenses" />
+                  <Line type="monotone" dataKey="net" stroke="hsl(var(--primary))" strokeWidth={2} name="Net" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Room Occupancy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={occupancyData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={100}
+                    fill="hsl(var(--primary))"
+                    dataKey="value"
+                  >
+                    {occupancyData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={index === 0 ? "hsl(var(--success))" : "hsl(var(--muted))"} 
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {expenseData.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Expense Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={expenseData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }}
+                  />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
