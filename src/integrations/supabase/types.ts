@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          announcement_type: string
+          content: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          owner_id: string
+          property_id: string | null
+          title: string
+        }
+        Insert: {
+          announcement_type?: string
+          content: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          owner_id: string
+          property_id?: string | null
+          title: string
+        }
+        Update: {
+          announcement_type?: string
+          content?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          owner_id?: string
+          property_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -69,6 +110,8 @@ export type Database = {
         Row: {
           bed_number: string | null
           created_at: string | null
+          email: string | null
+          emergency_contact: string | null
           full_name: string
           id: string
           id_proof_number: string | null
@@ -86,6 +129,8 @@ export type Database = {
         Insert: {
           bed_number?: string | null
           created_at?: string | null
+          email?: string | null
+          emergency_contact?: string | null
           full_name: string
           id?: string
           id_proof_number?: string | null
@@ -103,6 +148,8 @@ export type Database = {
         Update: {
           bed_number?: string | null
           created_at?: string | null
+          email?: string | null
+          emergency_contact?: string | null
           full_name?: string
           id?: string
           id_proof_number?: string | null
@@ -134,6 +181,70 @@ export type Database = {
           },
           {
             foreignKeyName: "guests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_requests: {
+        Row: {
+          created_at: string | null
+          description: string
+          guest_id: string | null
+          id: string
+          priority: string
+          property_id: string | null
+          resolved_at: string | null
+          room_id: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          guest_id?: string | null
+          id?: string
+          priority?: string
+          property_id?: string | null
+          resolved_at?: string | null
+          room_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          guest_id?: string | null
+          id?: string
+          priority?: string
+          property_id?: string | null
+          resolved_at?: string | null
+          room_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_requests_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
@@ -204,6 +315,41 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pg_rules: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          owner_id: string
+          property_id: string | null
+          rule_text: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          owner_id: string
+          property_id?: string | null
+          rule_text: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          owner_id?: string
+          property_id?: string | null
+          rule_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pg_rules_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -385,7 +531,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "owner" | "manager"
+      app_role: "owner" | "manager" | "guest"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -513,7 +659,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "manager"],
+      app_role: ["owner", "manager", "guest"],
     },
   },
 } as const

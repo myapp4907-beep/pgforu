@@ -16,6 +16,15 @@ import { useAuth } from "./hooks/useAuth";
 import { PropertyProvider } from "./contexts/PropertyContext";
 import { FirstPropertySetup } from "./components/FirstPropertySetup";
 
+// Guest imports
+import GuestLogin from "./pages/guest/GuestLogin";
+import GuestDashboard from "./pages/guest/GuestDashboard";
+import GuestProfile from "./pages/guest/GuestProfile";
+import GuestPayments from "./pages/guest/GuestPayments";
+import GuestMaintenance from "./pages/guest/GuestMaintenance";
+import GuestRules from "./pages/guest/GuestRules";
+import GuestLayout from "./components/guest/GuestLayout";
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
@@ -45,6 +54,16 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          
+          {/* Guest Routes */}
+          <Route path="/guest/login" element={<GuestLogin />} />
+          <Route path="/guest/dashboard" element={<GuestLayout><GuestDashboard /></GuestLayout>} />
+          <Route path="/guest/profile" element={<GuestLayout><GuestProfile /></GuestLayout>} />
+          <Route path="/guest/payments" element={<GuestLayout><GuestPayments /></GuestLayout>} />
+          <Route path="/guest/maintenance" element={<GuestLayout><GuestMaintenance /></GuestLayout>} />
+          <Route path="/guest/rules" element={<GuestLayout><GuestRules /></GuestLayout>} />
+          
+          {/* Owner Routes */}
           <Route
             path="/*"
             element={
