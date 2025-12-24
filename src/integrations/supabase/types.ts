@@ -525,6 +525,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_guest_of_room: {
+        Args: { _room_id: string; _user_email: string }
+        Returns: boolean
+      }
       is_property_owner: {
         Args: { _property_id: string; _user_id: string }
         Returns: boolean

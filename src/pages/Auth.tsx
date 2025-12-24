@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Home } from "lucide-react";
+import { Home, User, Building2 } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -122,10 +122,13 @@ const Auth = () => {
           <p className="text-muted-foreground">Manage your PG with ease</p>
         </div>
 
-        <Card>
+        <Card className="mb-4">
           <CardHeader>
-            <CardTitle>Get Started</CardTitle>
-            <CardDescription>Login or create a new account</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Owner / Manager Login
+            </CardTitle>
+            <CardDescription>Login or create a new account to manage your PG</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
@@ -216,6 +219,29 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Guest Login Card */}
+        <Card className="border-dashed">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <User className="h-5 w-5" />
+              Guest Portal
+            </CardTitle>
+            <CardDescription>
+              Access your room details, payments, and more
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/guest/login">
+              <Button variant="outline" className="w-full">
+                Login as Guest
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Guest accounts are created by your PG Owner or Manager. Contact them if you don't have access.
+            </p>
           </CardContent>
         </Card>
       </div>
