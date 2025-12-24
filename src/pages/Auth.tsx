@@ -122,9 +122,33 @@ const Auth = () => {
           <p className="text-muted-foreground">Manage your PG with ease</p>
         </div>
 
-        <Card className="mb-4">
-          <CardHeader>
+        {/* Guest Login Card - Top */}
+        <Card className="mb-4 border-primary/20">
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Guest Portal
+            </CardTitle>
+            <CardDescription>
+              Access your room details, payments, and more
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/guest/login">
+              <Button className="w-full">
+                Login as Guest
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Guest accounts are created by your PG Owner or Manager. Contact them if you don't have access.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Owner/Manager Login Card - Bottom */}
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="h-5 w-5" />
               Owner / Manager Login
             </CardTitle>
@@ -219,29 +243,6 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
-
-        {/* Guest Login Card */}
-        <Card className="border-dashed">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <User className="h-5 w-5" />
-              Guest Portal
-            </CardTitle>
-            <CardDescription>
-              Access your room details, payments, and more
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link to="/guest/login">
-              <Button variant="outline" className="w-full">
-                Login as Guest
-              </Button>
-            </Link>
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              Guest accounts are created by your PG Owner or Manager. Contact them if you don't have access.
-            </p>
           </CardContent>
         </Card>
       </div>
